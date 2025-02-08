@@ -1,7 +1,7 @@
 import scrapy
 from fake_useragent import UserAgent
 
-from database.database import insert_or_update_product
+from database.database import get_tracked_products, insert_or_update_product
 
 class AmazonSpider(scrapy.Spider):
     name = "amazon"
@@ -10,10 +10,18 @@ class AmazonSpider(scrapy.Spider):
         "https://www.amazon.nl/dp/B07W4DGFSM",
     ]
     
-
+    def start_requests(self):
+        # Takes following products URL's from the database and send to scrapy
+        products = get_tracked_products()
+        for product_id, url in products:
+            yield scrapy.Request(
+                url=url, 
+                callback=self.parse, 
+                meta={"product_id": product_id}
+                )
+            
 
     def parse(self, response):
-
         product_id = response.url.split("/dp/")[1].split("/")[0]
 
         ua = UserAgent()
