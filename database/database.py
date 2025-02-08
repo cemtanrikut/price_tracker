@@ -9,6 +9,7 @@ def create_table():
     c.execute('''CREATE TABLE IF NOT EXISTS products (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         product_id TEXT UNIQUE,
+                        platform TEXT NOT NULL,
                         title TEXT,
                         price REAL,
                         old_price REAL,
@@ -20,35 +21,43 @@ def create_table():
     c.execute('''CREATE TABLE IF NOT EXISTS tracked_products (
                         id INTEGER PRIMARY KEY AUTOINCREMENT,
                         product_id TEXT UNIQUE,
+                        platform TEXT NOT NULL,
                         url TEXT NOT NULL
                     )''')
     
     conn.commit()
     conn.close()
 
-def insert_or_update_product(product_id, title, price, availability):
+def insert_or_update_product(product_id, platform, title, price, availability):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT price FROM products WHERE product_id = ?", (product_id,))
-    result = c.fetchone()
+    
+    try:
+        c.execute("SELECT COUNT(*) FROM products WHERE product_id = ?", (product_id,))
+        exists = c.fetchone()[0]
 
-    if result:
-        old_price = result[0]
-        c.execute("UPDATE products SET price = ?, old_price = ?, availability = ?, last_updated = CURRENT_TIMESTAMP WHERE product_id = ?", 
-                           (price, old_price, availability, product_id))
-        print(f"🔄 Product updated: {title} - New Price: {price} (Old: {old_price})")
+        if exists == 0:
+            print(f"🛠 New Product Adding: {product_id} - {title} ({price} €) - {availability}")
+            c.execute("INSERT INTO products (product_id, platform, title, price, old_price, availability) VALUES (?, ?, ?, ?, ?, ?)",
+                           (product_id, platform, title, price, price, availability))
+        else:
+            print(f"🔄 Product Updating: {product_id} - {title} ({price} €) - {availability}")
+            c.execute("UPDATE products SET title = ?, price = ?, old_price = price, availability = ? WHERE product_id = ?",
+                           (title, price, availability, product_id))
 
-    else:
-        c.execute("INSERT INTO products (product_id, title, price, availability) VALUES (?, ?, ?, ?)", (product_id, title, price, availability))
-        print(f"✅ New Product Added: {title} - Price: {price}")
+        conn.commit()
+    except Exception as e:
+        print(f"❌ DB write error: {e}")
+    finally:
+        conn.close()
 
-    conn.commit()
-    conn.close()
-
-def add_tracked_product(product_id, url):
+def add_tracked_product(product_id, platform, url):
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("INSERT OR IGNORE INTO tracked_products (product_id, url) VALUES (?, ?)", (product_id, url))
+    c.execute("INSERT OR IGNORE INTO tracked_products (product_id, platform, url) VALUES (?, ?, ?)", 
+              (product_id, platform, url))
+    c.execute("SELECT COUNT(*) FROM products WHERE product_id = ?", (product_id,))
+    exists = c.fetchone()[0]
     conn.commit()
     conn.close()
     print(f"✅ New product added to following list: {product_id}")
@@ -56,7 +65,7 @@ def add_tracked_product(product_id, url):
 def get_tracked_products():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT product_id, url FROM tracked_products")
+    c.execute("SELECT product_id, platform, url FROM tracked_products")
     products = c.fetchall()
     conn.close()
     return [(row[0], row[1]) for row in products if len(row) == 2]
