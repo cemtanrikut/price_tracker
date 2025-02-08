@@ -6,9 +6,9 @@ from database.database import get_tracked_products, insert_or_update_product
 class AmazonSpider(scrapy.Spider):
     name = "amazon"
 
-    start_urls = [
-        "https://www.amazon.nl/dp/B07W4DGFSM",
-    ]
+    # start_urls = [
+    #     "https://www.amazon.nl/dp/B07W4DGFSM",
+    # ]
     
     def start_requests(self):
         # Takes following products URL's from the database and send to scrapy
