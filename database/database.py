@@ -60,3 +60,19 @@ def get_tracked_products():
     products = c.fetchall()
     conn.close()
     return [(row[0], row[1]) for row in products if len(row) == 2]
+
+def check_price_drop(product_id, new_price):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    c.execute("SELECT price FROM products WHERE product_id = ?", (product_id,))
+    result = c.fetchone()
+
+    conn.close()
+
+    if result:
+        old_price = result[0]
+        if old_price > new_price:
+            print(f"📉 Price Dropped! {old_price} € → {new_price} €")
+            return True
+    return False
