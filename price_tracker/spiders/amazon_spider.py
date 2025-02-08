@@ -13,12 +13,17 @@ class AmazonSpider(scrapy.Spider):
     def start_requests(self):
         # Takes following products URL's from the database and send to scrapy
         products = get_tracked_products()
-        for product_id, url in products:
-            yield scrapy.Request(
-                url=url, 
-                callback=self.parse, 
-                meta={"product_id": product_id}
-                )
+
+        if not products:
+            self.logger.warning("Takip edilen ürün bulunamadı!")
+            return
+        
+        for product in products:
+            if len(product) == 2:  # Hata çıkmasını önlemek için kontrol
+                product_id, url = product
+                yield scrapy.Request(url=url, callback=self.parse, meta={'product_id': product_id})
+            else:
+                self.logger.error(f"Data error: {product}")
             
 
     def parse(self, response):

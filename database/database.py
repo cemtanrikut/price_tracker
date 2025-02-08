@@ -56,7 +56,7 @@ def add_tracked_product(product_id, url):
 def get_tracked_products():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-    c.execute("SELECT * FROM tracked_products")
+    c.execute("SELECT product_id, url FROM tracked_products")
     products = c.fetchall()
     conn.close()
-    return products
+    return [(row[0], row[1]) for row in products if len(row) == 2]
