@@ -15,6 +15,14 @@ def create_table():
                         availability TEXT,
                         last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                     )''')    
+    
+    # Following products
+    c.execute('''CREATE TABLE IF NOT EXISTS tracked_products (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        product_id TEXT UNIQUE,
+                        url TEXT NOT NULL
+                    )''')
+    
     conn.commit()
     conn.close()
 
@@ -36,3 +44,19 @@ def insert_or_update_product(product_id, title, price, availability):
 
     conn.commit()
     conn.close()
+
+def add_tracked_product(product_id, url):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("INSERT OR IGNORE INTO tracked_products (product_id, url) VALUES (?, ?)", (product_id, url))
+    conn.commit()
+    conn.close()
+    print(f"✅ New product added to following list: {product_id}")
+
+def get_tracked_products():
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+    c.execute("SELECT * FROM tracked_products")
+    products = c.fetchall()
+    conn.close()
+    return products
