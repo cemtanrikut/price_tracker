@@ -1,7 +1,7 @@
 import scrapy
 from fake_useragent import UserAgent
 
-from database.database import get_tracked_products, insert_or_update_product
+from database.database import check_price_drop, get_tracked_products, insert_or_update_product
 
 class AmazonSpider(scrapy.Spider):
     name = "amazon"
@@ -40,6 +40,11 @@ class AmazonSpider(scrapy.Spider):
         product_title = product_title.strip() if product_title else "Unknown"
         price = float(price.replace("€", "").replace(",", ".").strip()) if price else 0
         availability = availability.strip() if availability else "Stock Info Unknown"
+
+        if check_price_drop(product_id, price):
+            message = f"📉 **Price Dropped!** {product_title}\n💰 **New Price:** {price} €\n🔗 [Buy]({response.url})"
+            # TODO: Send notification
+
 
         insert_or_update_product(product_id, product_title, price, availability)
 
